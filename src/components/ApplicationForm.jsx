@@ -53,7 +53,7 @@ export function ApplicationForm() {
 
   async function uploadFile(file) {
       if (!file) return null
-      const uniqueName = \`\${Date.now()}_\${file.name.replace(/\s/g, '_')}\`
+      const uniqueName = `${Date.now()}_${file.name.replace(/\s/g, '_')}`
       const { data, error } = await supabase.storage
           .from('documents')
           .upload(uniqueName, file)
