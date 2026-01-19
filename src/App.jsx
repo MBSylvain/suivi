@@ -150,6 +150,7 @@ function App() {
           <Route path="/applications" element={<ApplicationList />} />
           <Route path="/applications/:id" element={<ApplicationDetail />} />
           <Route path="/add" element={<ApplicationForm />} />
+          <Route path="/edit/:id" element={<ApplicationForm />} />
         </Routes>
       </Layout>
     </Router>

@@ -1,11 +1,12 @@
 import { useEffect, useState } from 'react'
-import { useParams, Link } from 'react-router-dom'
-import { ArrowLeft, Calendar, Building, Globe, FileText, Clock } from 'lucide-react'
+import { useParams, Link, useNavigate } from 'react-router-dom'
+import { ArrowLeft, Calendar, Building, Globe, FileText, Clock, Trash2, Pencil } from 'lucide-react'
 import { supabase } from '../lib/supabase'
 import { StatusBadge } from './StatusBadge'
 
 export function ApplicationDetail() {
   const { id } = useParams()
+  const navigate = useNavigate()
   const [application, setApplication] = useState(null)
   const [loading, setLoading] = useState(true)
 
@@ -32,6 +33,23 @@ export function ApplicationDetail() {
     }
   }, [id])
 
+  const handleDelete = async () => {
+    if (window.confirm('Voulez-vous vraiment supprimer cette candidature ?')) {
+        try {
+            const { error } = await supabase
+                .from('applications')
+                .delete()
+                .eq('id', id)
+            
+            if (error) throw error
+            navigate('/applications')
+        } catch (error) {
+            console.error('Error deleting:', error)
+            alert('Erreur lors de la suppression')
+        }
+    }
+  }
+
   if (loading) return <div className="p-8 text-center text-muted-foreground">Chargement des détails...</div>
 
   if (!application) return (
@@ -43,10 +61,28 @@ export function ApplicationDetail() {
 
   return (
     <div className="max-w-3xl mx-auto space-y-6">
-      <Link to="/applications" className="inline-flex items-center gap-2 text-sm text-muted-foreground hover:text-foreground transition-colors mb-4">
-        <ArrowLeft size={16} />
-        Retour aux candidatures
-      </Link>
+      <div className="flex justify-between items-center">
+        <Link to="/applications" className="inline-flex items-center gap-2 text-sm text-muted-foreground hover:text-foreground transition-colors">
+            <ArrowLeft size={16} />
+            Retour aux candidatures
+        </Link>
+        <div className="flex gap-2">
+            <Link 
+                to={`/edit/${application.id}`}
+                className="inline-flex items-center gap-2 px-3 py-1.5 text-sm font-medium text-primary bg-primary/10 hover:bg-primary/20 rounded-md transition-colors"
+            >
+                <Pencil size={14} />
+                Modifier
+            </Link>
+            <button 
+                onClick={handleDelete}
+                className="inline-flex items-center gap-2 px-3 py-1.5 text-sm font-medium text-red-600 bg-red-100 hover:bg-red-200 dark:bg-red-900/30 dark:text-red-300 dark:hover:bg-red-900/50 rounded-md transition-colors"
+            >
+                <Trash2 size={14} />
+                Supprimer
+            </button>
+        </div>
+      </div>
 
       <div className="bg-card border border-border rounded-xl p-8 shadow-sm">
         <div className="flex flex-col md:flex-row justify-between items-start gap-4 mb-6">
