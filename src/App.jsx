@@ -207,10 +207,38 @@ import { ApplicationDetail } from './components/ApplicationDetail'
 
 // ... (existing imports)
 
+import { Login } from './components/Login'
+
+// ... existing imports
+
 function App() {
+  const [session, setSession] = useState(null)
+  const [loading, setLoading] = useState(true)
+
+  useEffect(() => {
+    supabase.auth.getSession().then(({ data: { session } }) => {
+      setSession(session)
+      setLoading(false)
+    })
+
+    const {
+      data: { subscription },
+    } = supabase.auth.onAuthStateChange((_event, session) => {
+      setSession(session)
+    })
+
+    return () => subscription.unsubscribe()
+  }, [])
+
+  if (loading) return <div className="min-h-screen flex items-center justify-center">Chargement...</div>
+
+  if (!session) {
+    return <Login />
+  }
+
   return (
     <Router>
-      <Layout>
+      <Layout session={session}>
         <Routes>
           <Route path="/" element={<Dashboard />} />
           <Route path="/applications" element={<ApplicationList />} />
