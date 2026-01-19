@@ -1,71 +1,157 @@
 import { useState, useEffect } from 'react'
-import { BrowserRouter as Router, Routes, Route } from 'react-router-dom'
-import { Sun, Moon, Palette } from 'lucide-react'
+import { BrowserRouter as Router, Routes, Route, Link } from 'react-router-dom'
+import { Layout } from './components/Layout'
+import { ApplicationCard } from './components/ApplicationCard'
+import { ApplicationForm } from './components/ApplicationForm'
+import { supabase } from './lib/supabase'
 
-function Home() {
+function Dashboard() {
+  const [stats, setStats] = useState({ total: 0, active: 0, interview: 0 })
+  const [recent, setRecent] = useState([])
+  const [loading, setLoading] = useState(true)
+
+  useEffect(() => {
+    fetchDashboardData()
+  }, [])
+
+  async function fetchDashboardData() {
+    try {
+      const { data, error } = await supabase
+        .from('applications')
+        .select('*')
+        .order('created_at', { ascending: false })
+
+      if (error) throw error
+
+      if (data) {
+        setRecent(data.slice(0, 3))
+        setStats({
+          total: data.length,
+          active: data.filter(a => ['applied', 'interview', 'offer'].includes(a.status)).length,
+          interview: data.filter(a => a.status === 'interview').length
+        })
+      }
+    } catch (error) {
+      console.error('Error loading dashboard:', error)
+    } finally {
+      setLoading(false)
+    }
+  }
+
+  if (loading) return <div className="p-8 text-center">Chargement...</div>
+
   return (
-    <div className="flex flex-col items-center justify-center min-h-[60vh] text-center px-4">
-      <h1 className="text-4xl font-bold text-primary mb-4">Suivi de Candidatures</h1>
-      <p className="text-lg text-secondary max-w-md">
-        Organisez votre recherche d'emploi avec style et efficacité.
-      </p>
-      <div className="mt-8 flex gap-4">
-        <button className="px-6 py-2 bg-primary text-primary-foreground rounded-lg font-medium hover:opacity-90 transition-opacity">
-          Commencer
-        </button>
-        <button className="px-6 py-2 border border-secondary text-foreground rounded-lg font-medium hover:bg-secondary/10 transition-colors">
-          En savoir plus
-        </button>
+    <div className="space-y-8">
+      <div className="flex flex-col md:flex-row gap-4 justify-between items-start md:items-end">
+        <div>
+           <h1 className="text-3xl font-bold tracking-tight">Tableau de bord</h1>
+           <p className="text-muted-foreground">Vue d'ensemble de vos candidatures.</p>
+        </div>
+        <Link to="/add" className="bg-primary text-primary-foreground px-4 py-2 rounded-lg font-medium hover:opacity-90 transition-opacity">
+            + Nouvelle Candidature
+        </Link>
+      </div>
+
+      <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
+          <div className="bg-card p-6 rounded-xl border border-border shadow-sm">
+             <div className="text-sm text-muted-foreground font-medium">Total Candidatures</div>
+             <div className="text-3xl font-bold mt-2">{stats.total}</div>
+          </div>
+          <div className="bg-card p-6 rounded-xl border border-border shadow-sm">
+             <div className="text-sm text-muted-foreground font-medium">En cours</div>
+             <div className="text-3xl font-bold mt-2 text-primary">{stats.active}</div>
+          </div>
+          <div className="bg-card p-6 rounded-xl border border-border shadow-sm">
+             <div className="text-sm text-muted-foreground font-medium">Entretiens</div>
+             <div className="text-3xl font-bold mt-2 text-accent">{stats.interview}</div>
+          </div>
+      </div>
+
+      <div>
+        <h2 className="text-xl font-semibold mb-4">Mises à jour récentes</h2>
+        {recent.length === 0 ? (
+            <p className="text-muted-foreground">Aucune candidature pour le moment.</p>
+        ) : (
+            <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
+            {recent.map(app => (
+                <ApplicationCard key={app.id} application={app} />
+            ))}
+            </div>
+        )}
       </div>
     </div>
   )
 }
 
+function ApplicationList() {
+    const [applications, setApplications] = useState([])
+    const [loading, setLoading] = useState(true)
+
+    useEffect(() => {
+        fetchApplications()
+    }, [])
+
+    async function fetchApplications() {
+        try {
+            const { data, error } = await supabase
+                .from('applications')
+                .select('*')
+                .order('date_applied', { ascending: false })
+            
+            if (error) throw error
+            if (data) setApplications(data)
+        } catch (error) {
+            console.error('Error loading applications:', error)
+        } finally {
+            setLoading(false)
+        }
+    }
+
+    if (loading) return <div className="p-8 text-center">Chargement...</div>
+
+    return (
+        <div className="space-y-6">
+            <div className="flex justify-between items-end">
+                <div>
+                    <h1 className="text-3xl font-bold tracking-tight">Mes Candidatures</h1>
+                    <p className="text-muted-foreground">Suivez l'avancement de toutes vos demandes.</p>
+                </div>
+                <Link to="/add" className="bg-primary text-primary-foreground px-4 py-2 rounded-lg font-medium hover:opacity-90 transition-opacity">
+                    Ajouter
+                </Link>
+            </div>
+            
+            {applications.length === 0 ? (
+                <div className="text-center py-12 border border-dashed border-border rounded-xl">
+                    <p className="text-lg text-muted-foreground mb-4">Vous n'avez pas encore ajouté de candidatures.</p>
+                    <Link to="/add" className="text-primary font-medium hover:underline">Commençer maintenant</Link>
+                </div>
+            ) : (
+                <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
+                    {applications.map(app => (
+                        <ApplicationCard key={app.id} application={app} />
+                    ))}
+                </div>
+            )}
+        </div>
+    )
+}
+
+import { ApplicationDetail } from './components/ApplicationDetail'
+
+// ... (existing imports)
+
 function App() {
-  const [theme, setTheme] = useState(localStorage.getItem('theme') || 'light')
-
-  useEffect(() => {
-    document.documentElement.setAttribute('data-theme', theme)
-    localStorage.setItem('theme', theme)
-  }, [theme])
-
-  const themes = ['light', 'dark', 'emerald', 'rose']
-
   return (
     <Router>
-      <div className="min-h-screen bg-background text-foreground transition-colors duration-300">
-        <nav className="border-b border-secondary/20 px-6 py-4 flex justify-between items-center bg-background/50 backdrop-blur-md sticky top-0">
-          <div className="text-xl font-bold text-primary flex items-center gap-2">
-            <Palette size={24} />
-            SuiviJob
-          </div>
-
-          <div className="flex items-center gap-4">
-            <div className="flex gap-2 p-1 bg-secondary/10 rounded-full">
-              {themes.map((t) => (
-                <button
-                  key={t}
-                  onClick={() => setTheme(t)}
-                  className={`w-8 h-8 rounded-full flex items-center justify-center transition-all ${theme === t ? 'bg-primary text-primary-foreground scale-110 shadow-lg' : 'hover:bg-secondary/20'
-                    }`}
-                  title={`Thème ${t}`}
-                >
-                  {t === 'light' && <Sun size={14} />}
-                  {t === 'dark' && <Moon size={14} />}
-                  {t === 'emerald' && <div className="w-3 h-3 bg-emerald-500 rounded-full" />}
-                  {t === 'rose' && <div className="w-3 h-3 bg-rose-500 rounded-full" />}
-                </button>
-              ))}
-            </div>
-          </div>
-        </nav>
-
-        <main className="container mx-auto py-8">
-          <Routes>
-            <Route path="/" element={<Home />} />
-          </Routes>
-        </main>
-      </div>
+      <Layout>
+        <Routes>
+          <Route path="/" element={<Dashboard />} />
+          <Route path="/applications" element={<ApplicationList />} />
+          <Route path="/applications/:id" element={<ApplicationDetail />} />
+          <Route path="/add" element={<ApplicationForm />} />
+        </Routes>
+      </Layout>
     </Router>
   )
 }
