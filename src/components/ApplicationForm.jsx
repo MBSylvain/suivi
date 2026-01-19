@@ -17,6 +17,8 @@ export function ApplicationForm() {
     url: '',
     notes: ''
   })
+  const [cvFile, setCvFile] = useState(null)
+  const [coverLetterFile, setCoverLetterFile] = useState(null)
 
   useEffect(() => {
     if (isEditing) {
@@ -49,30 +51,63 @@ export function ApplicationForm() {
       }
   }
 
+  async function uploadFile(file) {
+      if (!file) return null
+      const uniqueName = \`\${Date.now()}_\${file.name.replace(/\s/g, '_')}\`
+      const { data, error } = await supabase.storage
+          .from('documents')
+          .upload(uniqueName, file)
+      
+      if (error) {
+          console.error("Upload error", error)
+          return null
+      }
+      
+      const { data: { publicUrl } } = supabase.storage
+          .from('documents')
+          .getPublicUrl(data.path)
+          
+      return publicUrl
+  }
+
   const handleSubmit = async (e) => {
     e.preventDefault()
     setLoading(true)
 
-    const submissionData = {
-        ...formData,
-        follow_up_date: formData.follow_up_date || null
-    }
-
     try {
-      if (isEditing) {
-        const { error } = await supabase
-            .from('applications')
-            .update(submissionData)
-            .eq('id', id)
-        if (error) throw error
-      } else {
-        const { error } = await supabase
-            .from('applications')
-            .insert([submissionData])
-        if (error) throw error
-      }
+        let cvUrl = null
+        let coverLetterUrl = null
 
-      navigate(isEditing ? `/applications/${id}` : '/applications')
+        if (cvFile) {
+            cvUrl = await uploadFile(cvFile)
+        }
+        if (coverLetterFile) {
+            coverLetterUrl = await uploadFile(coverLetterFile)
+        }
+
+        const submissionData = {
+            ...formData,
+            follow_up_date: formData.follow_up_date || null,
+        }
+        
+        // Only update URLs if new files are uploaded
+        if (cvUrl) submissionData.cv_url = cvUrl
+        if (coverLetterUrl) submissionData.cover_letter_url = coverLetterUrl
+
+        if (isEditing) {
+            const { error } = await supabase
+                .from('applications')
+                .update(submissionData)
+                .eq('id', id)
+            if (error) throw error
+        } else {
+            const { error } = await supabase
+                .from('applications')
+                .insert([submissionData])
+            if (error) throw error
+        }
+
+        navigate(isEditing ? `/applications/${id}` : '/applications')
     } catch (error) {
       console.error('Error saving application:', error)
       alert('Erreur lors de l\'enregistrement')
@@ -185,6 +220,33 @@ export function ApplicationForm() {
               className="flex h-10 w-full rounded-md border border-input bg-background px-3 py-2 text-sm ring-offset-background placeholder:text-muted-foreground focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring"
               placeholder="https://..."
             />
+        </div>
+
+        <div className="grid grid-cols-1 md:grid-cols-2 gap-6 bg-secondary/5 p-4 rounded-lg border border-border/50">
+            <div className="space-y-2">
+                <label className="text-sm font-medium leading-none" htmlFor="cv">
+                  CV (PDF, Word)
+                </label>
+                <input
+                  type="file"
+                  id="cv"
+                  accept=".pdf,.doc,.docx"
+                  onChange={(e) => setCvFile(e.target.files[0])}
+                  className="flex w-full rounded-md border border-input bg-background px-3 py-2 text-sm ring-offset-background file:border-0 file:bg-transparent file:text-sm file:font-medium placeholder:text-muted-foreground focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring disabled:cursor-not-allowed disabled:opacity-50"
+                />
+            </div>
+             <div className="space-y-2">
+                <label className="text-sm font-medium leading-none" htmlFor="cover_letter">
+                  Lettre de motivation
+                </label>
+                <input
+                  type="file"
+                  id="cover_letter"
+                  accept=".pdf,.doc,.docx"
+                  onChange={(e) => setCoverLetterFile(e.target.files[0])}
+                  className="flex w-full rounded-md border border-input bg-background px-3 py-2 text-sm ring-offset-background file:border-0 file:bg-transparent file:text-sm file:font-medium placeholder:text-muted-foreground focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring disabled:cursor-not-allowed disabled:opacity-50"
+                />
+            </div>
         </div>
 
          <div className="space-y-2">

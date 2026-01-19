@@ -145,6 +145,40 @@ export function ApplicationDetail() {
                         )}
                     </div>
                 </div>
+
+                <div className="space-y-2 pt-2">
+                    <p className="text-sm font-medium text-muted-foreground flex items-center gap-2">
+                        <FileText size={16} />
+                        Documents
+                    </p>
+                    <div className="flex flex-col gap-2">
+                        {application.cv_url ? (
+                            <a 
+                                href={application.cv_url}
+                                target="_blank"
+                                rel="noopener noreferrer" 
+                                className="text-sm inline-flex items-center gap-2 text-primary hover:underline"
+                            >
+                                📄 Voir le CV
+                            </a>
+                        ) : (
+                            <span className="text-sm text-muted-foreground italic pl-6">Aucun CV</span>
+                        )}
+                        
+                        {application.cover_letter_url ? (
+                            <a 
+                                href={application.cover_letter_url}
+                                target="_blank"
+                                rel="noopener noreferrer" 
+                                className="text-sm inline-flex items-center gap-2 text-primary hover:underline"
+                            >
+                                📝 Voir la lettre de motivation
+                            </a>
+                        ) : (
+                            <span className="text-sm text-muted-foreground italic pl-6">Aucune lettre</span>
+                        )}
+                    </div>
+                </div>
             </div>
         </div>
 
