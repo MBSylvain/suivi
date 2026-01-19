@@ -1,6 +1,7 @@
 import { Link, useLocation } from 'react-router-dom'
-import { LayoutDashboard, PlusCircle, List, Sun, Moon, Palette, Briefcase } from 'lucide-react'
+import { LayoutDashboard, PlusCircle, List, Sun, Moon, Palette, Briefcase, LogOut } from 'lucide-react'
 import { useState, useEffect } from 'react'
+import { supabase } from '../lib/supabase'
 
 export function Layout({ children }) {
   const [theme, setTheme] = useState(localStorage.getItem('theme') || 'light')
@@ -10,6 +11,10 @@ export function Layout({ children }) {
     document.documentElement.setAttribute('data-theme', theme)
     localStorage.setItem('theme', theme)
   }, [theme])
+
+  const handleLogout = async () => {
+    await supabase.auth.signOut()
+  }
 
   const themes = ['light', 'dark', 'emerald', 'rose']
 
@@ -68,6 +73,14 @@ export function Layout({ children }) {
                 </button>
               ))}
             </div>
+
+            <button 
+                onClick={handleLogout}
+                className="p-2 text-muted-foreground hover:text-red-500 transition-colors"
+                title="Se déconnecter"
+            >
+                <LogOut size={20} />
+            </button>
           </div>
         </div>
       </nav>
