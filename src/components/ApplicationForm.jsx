@@ -53,17 +53,22 @@ export function ApplicationForm() {
     e.preventDefault()
     setLoading(true)
 
+    const submissionData = {
+        ...formData,
+        follow_up_date: formData.follow_up_date || null
+    }
+
     try {
       if (isEditing) {
         const { error } = await supabase
             .from('applications')
-            .update(formData)
+            .update(submissionData)
             .eq('id', id)
         if (error) throw error
       } else {
         const { error } = await supabase
             .from('applications')
-            .insert([formData])
+            .insert([submissionData])
         if (error) throw error
       }
 
